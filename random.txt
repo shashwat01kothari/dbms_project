@@ -1,0 +1,103 @@
+""async def get_grounds_by_location_and_sport(location=None, sport=None):
+    """
+    Retrieves grounds based on the provided location and/or sport.
+    """
+    # Base query to fetch data from grounds table
+    try:
+        conn = await asyncpg.connect(
+            database="gorundbooking",
+            user="postgres",
+            password=password1,
+            host="localhost",
+            port=5432
+    )
+        base_query = """
+        SELECT ground_id, ground_name, location, sport_type
+        FROM grounds
+        WHERE TRUE  -- This ensures the query is valid even without additional conditions
+        """
+
+        # Add conditions for location and sport if provided
+        if location:
+            base_query += " AND location ILIKE %s"
+            
+        if sport:
+            base_query += " AND sport_type ILIKE %s"
+
+        # Prepare parameters for the query
+        params = []
+        if location:
+            params.append(f"%{location}%")
+        if sport:
+            params.append(f"%{sport}%")
+        base_query += " LIMIT 5"
+        # Execute the query with the prepared parameters
+        result = await conn.fetch(base_query, *params)
+        return result
+    except Exception as e:
+        raise Exception(f"Validation failed: {str(e)}")
+    finally:
+        await conn.close()
+
+async def get_grounds_by_name(ground_name):
+    """
+    Retrieves grounds based on the provided ground_name.
+    """
+    try:
+        # Connect to the database
+        conn = await asyncpg.connect(
+            database="gorundbooking",
+            user="postgres",
+            password=password1,
+            host="localhost",
+            port=5432
+        )
+
+        # Direct query to fetch grounds by ground_name
+        query = """
+        SELECT ground_id, ground_name, location, sport_type
+        FROM grounds
+        WHERE ground_name ILIKE %s
+        LIMIT 5
+        """
+
+        # Execute the query with the provided ground_name
+        result = await conn.fetch(query, f"%{ground_name}%")
+        print("db result",result)
+        return result
+
+    except Exception as e:
+        raise Exception(f"Error occurred: {str(e)}")
+    finally:
+        await conn.close()
+
+
+        # Tkinter setup
+root = tk.Tk()
+root.title("Login Page")
+
+# Email
+tk.Label(root, text="Email:").grid(row=0, column=0, padx=10, pady=5)
+email_entry = tk.Entry(root, width=30)
+email_entry.grid(row=0, column=1, padx=10, pady=5)
+
+# Password
+tk.Label(root, text="Password:").grid(row=1, column=0, padx=10, pady=5)
+password_entry = tk.Entry(root, show="*", width=30)
+password_entry.grid(row=1, column=1, padx=10, pady=5)
+
+# User Type
+tk.Label(root, text="User Type:").grid(row=2, column=0, padx=10, pady=5)
+user_type_var = tk.StringVar()
+user_type_menu = tk.OptionMenu(root, user_type_var, "booking_user", "ground_owner", "superadmin")
+user_type_menu.grid(row=2, column=1, padx=10, pady=5)
+
+# Login Button
+login_button = tk.Button(root, text="Login", command=lambda: handle_login())
+login_button.grid(row=3, column=1, pady=10)
+
+# Run Tkinter loop
+root.mainloop()
+
+
+""

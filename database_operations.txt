@@ -1,0 +1,717 @@
+DATABASE SCHEMAS 
+
+    CREATE TABLE users (
+        user_id SERIAL PRIMARY KEY,           
+        name VARCHAR(100) NOT NULL,            
+        email VARCHAR(255) UNIQUE NOT NULL,    
+        password VARCHAR(255) NOT NULL,       
+        phone_number VARCHAR(15),             
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+    );
+    ALTER TABLE users
+    ADD COLUMN user_type VARCHAR(50) DEFAULT 'booking_user';
+
+
+
+    CREATE TABLE grounds (
+        ground_id SERIAL PRIMARY KEY,         
+        ground_name VARCHAR(100) NOT NULL,    
+        location VARCHAR(100) NOT NULL,       
+        sport_type VARCHAR(50) NOT NULL       
+    );
+    ALTER TABLE grounds
+    ADD COLUMN creator_id INT REFERENCES users(user_id) ON DELETE SET NULL;
+    ALTER TABLE grounds
+    ADD COLUMN priority INTEGER DEFAULT 100;
+
+    UPDATE grounds
+    SET priority = 100;
+
+    ALTER TABLE grounds
+    ALTER COLUMN priority SET NOT NULL;
+
+
+
+    CREATE TABLE availability (
+        availability_id SERIAL PRIMARY KEY,      
+        ground_id INT REFERENCES grounds(ground_id) ON DELETE CASCADE, 
+        date DATE NOT NULL,                      
+        time_slot VARCHAR(20) NOT NULL,          
+        is_available BOOLEAN DEFAULT TRUE        
+    );
+
+
+        WITH date_series AS (
+            SELECT * FROM generate_series('2024-11-20'::date, '2024-11-25'::date, '1 day'::interval) AS date
+        )
+        INSERT INTO availability (ground_id, date, time_slot, is_available)
+        SELECT 
+            ground_id,
+            date::date,
+            time_slot,
+            true
+        FROM
+            date_series,
+            (SELECT generate_series(1, 41) AS ground_id) AS grounds,  
+            (VALUES 
+                ('Early Morning'), 
+                ('Morning'), 
+                ('Noon'), 
+                ('Afternoon'), 
+                ('Evening'), 
+                ('Night'), 
+                ('Midnight')
+            ) AS time_slots(time_slot);
+
+
+    CREATE TABLE bookings (
+        booking_id SERIAL PRIMARY KEY,            
+        ground_id INT REFERENCES grounds(ground_id) ON DELETE CASCADE, 
+        user_id INT NOT NULL,                     
+        booking_date DATE NOT NULL,               
+        time_slot VARCHAR(20) NOT NULL,           
+        booking_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+        status VARCHAR(20) DEFAULT 'Confirmed'    
+    );
+
+    CREATE TABLE receipts (
+        receipt_id SERIAL PRIMARY KEY,     
+        booking_id INT NOT NULL,            
+        user_id INT NOT NULL,               
+        ground_id INT NOT NULL,             
+        total_amount NUMERIC(10, 2) NOT NULL,
+        issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (booking_id) REFERENCES bookings (booking_id), 
+        FOREIGN KEY (user_id) REFERENCES users (user_id),     
+        FOREIGN KEY (ground_id) REFERENCES grounds (ground_id)   
+    );
+
+    CREATE TABLE tournaments (
+        tournament_id SERIAL PRIMARY KEY,
+        tournament_name VARCHAR(255) NOT NULL,
+        sport_type VARCHAR(100) NOT NULL,
+        location VARCHAR(255),
+        start_date DATE,
+        end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+        INSERT INTO tournaments (tournament_name, sport_type, location, start_date, end_date)
+        VALUES
+        ('Football Championship', 'Football', 'Indirangar', '2024-12-01', '2024-12-05'),
+        ('Cricket Tournament', 'Cricket', 'Koramangala', '2024-12-10', '2024-12-15'),
+        ('Badminton Open', 'Badminton', 'Banashankari', '2024-12-20', '2024-12-22'),
+        ('Football League', 'Football', 'Indirangar', '2024-12-05', '2024-12-09'),
+        ('Cricket Invitational', 'Cricket', 'Koramangala', '2024-12-15', '2024-12-18'),
+        ('Badminton Championship', 'Badminton', 'Banashankari', '2024-12-25', '2024-12-30'),
+        ('Football Cup', 'Football', 'Koramangala', '2024-12-02', '2024-12-06'),
+        ('Cricket Open', 'Cricket', 'Indirangar', '2024-12-08', '2024-12-12'),
+        ('Badminton Tournament', 'Badminton', 'Koramangala', '2024-12-18', '2024-12-21'),
+        ('Football Invitational', 'Football', 'Banashankari', '2024-12-10', '2024-12-14'),
+        ('Cricket League', 'Cricket', 'Banashankari', '2024-12-11', '2024-12-14'),
+        ('Badminton Open Challenge', 'Badminton', 'Indirangar', '2024-12-22', '2024-12-25'),
+        ('Football Invitational Cup', 'Football', 'Koramangala', '2024-12-07', '2024-12-11'),
+        ('Cricket World Cup', 'Cricket', 'Banashankari', '2024-12-23', '2024-12-27'),
+        ('Badminton Masters', 'Badminton', 'Indirangar', '2024-12-30', '2024-12-31'),
+        ('Football Tournament', 'Football', 'Koramangala', '2024-12-12', '2024-12-16'),
+        ('Cricket Test Series', 'Cricket', 'Banashankari', '2024-12-20', '2024-12-23'),
+        ('Badminton Championship Cup', 'Badminton', 'Koramangala', '2024-12-05', '2024-12-09'),
+        ('Football Super League', 'Football', 'Indirangar', '2024-12-08', '2024-12-12'),
+        ('Cricket Invitational Challenge', 'Cricket', 'Indirangar', '2024-12-18', '2024-12-22'),
+        ('Badminton Championship Open', 'Badminton', 'Banashankari', '2024-12-10', '2024-12-13'),
+        ('Football Premier League', 'Football', 'Koramangala', '2024-12-14', '2024-12-17'),
+        ('Cricket Pro Series', 'Cricket', 'Koramangala', '2024-12-25', '2024-12-28'),
+        ('Badminton Pro Cup', 'Badminton', 'Indirangar', '2024-12-11', '2024-12-14'),
+        ('Football Battle', 'Football', 'Banashankari', '2024-12-02', '2024-12-04'),
+        ('Cricket Invitational Cup', 'Cricket', 'Koramangala', '2024-12-28', '2024-12-31'),
+        ('Badminton Showdown', 'Badminton', 'Indirangar', '2024-12-04', '2024-12-07'),
+        ('Football Open Tournament', 'Football', 'Koramangala', '2024-12-21', '2024-12-24'),
+        ('Cricket Premier Cup', 'Cricket', 'Banashankari', '2024-12-16', '2024-12-19'),
+        ('Badminton Clash', 'Badminton', 'Koramangala', '2024-12-26', '2024-12-29');
+
+
+    CREATE TABLE user_tournaments (
+        user_id INT NOT NULL,
+        tournament_id INT NOT NULL,
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (user_id, tournament_id),
+        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+        FOREIGN KEY (tournament_id) REFERENCES tournaments(tournament_id) ON DELETE CASCADE
+    );
+
+        INSERT INTO user_tournaments (user_id, tournament_id)
+        SELECT 
+            (FLOOR(RANDOM() * 10) + 1) AS user_id,   
+            (FLOOR(RANDOM() * 30) + 2) AS tournament_id   
+        FROM generate_series(1, 50)  
+        ON CONFLICT (user_id, tournament_id) DO NOTHING;  
+
+
+
+    CREATE TABLE promotions (
+    promotion_id SERIAL PRIMARY KEY,
+    ground_id INT REFERENCES grounds(ground_id) ON DELETE CASCADE,
+    creator_id INT REFERENCES users(user_id) ON DELETE SET NULL,
+    status VARCHAR(50) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Rejected')),
+    promotion_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    details TEXT
+    );
+
+
+    CREATE TABLE wallet (
+    wallet_id SERIAL PRIMARY KEY,
+    user_id INT UNIQUE REFERENCES users(user_id) ON DELETE CASCADE,
+    balance NUMERIC(10, 2) DEFAULT 0 CHECK (balance >= 0)
+    );
+        
+        INSERT INTO wallet (user_id, balance)
+        SELECT generate_series(1, 10) AS user_id, 300.00 AS balance;
+        INSERT INTO wallet (user_id, balance)
+        VALUES
+            (11, 5000),
+            (12, 5000)
+        ON CONFLICT (user_id) 
+        DO UPDATE SET balance = EXCLUDED.balance;
+
+
+
+    CREATE TABLE wallet_transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    wallet_id INT REFERENCES wallet(wallet_id) ON DELETE CASCADE,
+    transaction_type VARCHAR(50) CHECK (transaction_type IN ('credit', 'debit')),
+    amount NUMERIC(10, 2) CHECK (amount > 0),
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    description TEXT
+    );
+
+
+    CREATE TABLE user_issues (
+    issue_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id),
+    issue_type VARCHAR(255),
+    description TEXT,
+    status VARCHAR(50) DEFAULT 'Open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+
+
+
+PROCEDURES
+
+    1)
+
+CREATE OR REPLACE FUNCTION check_and_book(
+    p_user_id INT,
+    p_ground_id INT,
+    p_booking_date VARCHAR(20), 
+    p_time_slot VARCHAR(20)
+) RETURNS TABLE (p_booking_id INT, p_message TEXT) AS $$
+DECLARE
+    p_is_available BOOLEAN;
+    p_user_balance NUMERIC(10, 2);  -
+    p_wallet_id INT;
+    p_creator_id INT;
+    p_booking_date_converted DATE;  
+BEGIN
+    -- Convert to a SQL-compatible DATE 
+    p_booking_date_converted := TO_DATE(p_booking_date, 'YYYY-MM-DD'); 
+
+    -- Check availability 
+    SELECT a.is_available INTO p_is_available
+    FROM availability a
+    WHERE a.ground_id = p_ground_id 
+    AND a.date = p_booking_date_converted  
+    AND a.time_slot = p_time_slot;
+
+    -- If the ground is not available, return an error message
+    IF p_is_available IS NOT TRUE THEN
+        RETURN QUERY SELECT NULL::INTEGER, 'The ground is not available for the selected date and time slot.'::TEXT;
+        RETURN;
+    END IF;
+
+    -- Check the user's balance 
+    SELECT balance, wallet_id INTO p_user_balance, p_wallet_id
+    FROM wallet
+    WHERE user_id = p_user_id;
+
+    -- If the user doesn't have a wallet or insufficient balance, return an error message
+    IF p_wallet_id IS NULL THEN
+        RETURN QUERY SELECT NULL::INTEGER, 'User wallet not found.'::TEXT;
+        RETURN;
+    ELSIF p_user_balance < 100 THEN
+        RETURN QUERY SELECT NULL::INTEGER, 'Insufficient balance to complete the booking.'::TEXT;
+        RETURN;
+    END IF;
+
+    -- create a booking record and retrieve the booking_id
+    INSERT INTO bookings (ground_id, user_id, booking_date, time_slot)
+    VALUES (p_ground_id, p_user_id, p_booking_date_converted, p_time_slot)  -- Use the converted date
+    RETURNING booking_id INTO p_booking_id;
+
+    -- Update availability 
+    UPDATE availability
+    SET is_available = FALSE
+    WHERE ground_id = p_ground_id 
+    AND date = p_booking_date_converted  -- Use the converted date
+    AND time_slot = p_time_slot;
+
+    -- Deduct 100 from booking_user
+    UPDATE wallet
+    SET balance = balance - 100
+    WHERE user_id = p_user_id;
+
+    -- Insert transaction record into wallet_transactions 
+    INSERT INTO wallet_transactions (
+        wallet_id, 
+        transaction_type, 
+        amount, 
+        description
+    ) 
+    VALUES (
+        p_wallet_id, 
+        'debit', 
+        100, 
+        'Booking payment for ground ID ' || p_ground_id || ' on ' || p_booking_date_converted || ' for ' || p_time_slot
+    );
+
+    -- Update wallet of super_admin
+    UPDATE wallet
+    SET balance = balance + 20
+    WHERE user_id = 13;
+
+    -- Find the creator_id of the ground  
+    SELECT creator_id INTO p_creator_id
+    FROM grounds
+    WHERE ground_id = p_ground_id;
+
+    IF p_creator_id IS NOT NULL THEN
+        -- update their wallet
+        UPDATE wallet
+        SET balance = balance + 90
+        WHERE user_id = p_creator_id;
+
+        -- Insert transaction record for the creator
+        INSERT INTO wallet_transactions (
+            wallet_id, 
+            transaction_type, 
+            amount, 
+            description
+        ) 
+        VALUES (
+            (SELECT wallet_id FROM wallet WHERE user_id = p_creator_id), 
+            'credit', 
+            90, 
+            'Booking payment for ground ID ' || p_ground_id || ' on ' || p_booking_date_converted || ' for ' || p_time_slot
+        );
+    END IF;
+
+    -- Return the booking_id 
+    RETURN QUERY 
+    SELECT p_booking_id::INTEGER, 'Booking confirmed successfully. Balance has been updated and transaction recorded.'::TEXT;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+TRIGGERS
+
+    1)
+    CREATE OR REPLACE FUNCTION generate_receipt() 
+    RETURNS TRIGGER AS $$
+    DECLARE
+        booking_total NUMERIC(10, 2);
+    BEGIN
+        
+        booking_total := 100.00;  
+
+        -- Insert into the receipts table
+        INSERT INTO receipts (booking_id, user_id, ground_id, total_amount)
+        VALUES (
+            NEW.booking_id,            
+            NEW.user_id,               
+            NEW.ground_id,             
+            booking_total             
+        );
+
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+
+    CREATE TRIGGER after_booking_insert
+    AFTER INSERT ON bookings
+    FOR EACH ROW
+    EXECUTE FUNCTION generate_receipt();
+
+
+
+ROLES
+    1) SUPER ADMIN   
+
+        CREATE ROLE super_admin;
+        GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO super_admin;
+
+        
+        SET ROLE super_admin;  
+
+
+    2) CUSTOMER SUPPORT
+        CREATE ROLE customer_support;
+        GRANT SELECT, UPDATE, INSERT, DELETE ON TABLE user_issues TO customer_support;
+
+        SET ROLE customer_support;  
+
+    3)GROUND OWNER
+
+    CREATE ROLE ground_owner;
+    SET ROLE ground_owner;
+
+    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE grounds TO ground_owner;
+    GRANT SELECT ON TABLE bookings TO ground_owner;
+    GRANT UPDATE ON TABLE wallet TO ground_owner;
+    GRANT ALL ON TABLE grounds TO ground_owner;
+    GRANT SELECT ON TABLE wallet_transactions TO ground_owner;
+
+    4)BOOKING User
+    
+    CREATE ROLE booking_user;
+    SET ROLE booking_user;
+
+    GRANT UPDATE ON TABLE wallet TO booking_user;
+    GRANT SELECT ON TABLE bookings TO booking_user;
+    GRANT SELECT ON TABLE receipts TO booking_user;
+    GRANT SELECT ON TABLE grounds TO ground_owner;
+    GRANT SELECT ON TABLE tournaments TO booking_user;
+    GRANT SELECT , INSERT ON TABLE user_tournaments TO booking_user;
+
+
+
+QUERIES
+
+    1) REWARD USERS - SUPERADMIN 
+    
+    
+    query = """
+        SELECT user_id, COUNT(*) AS total_count
+        FROM (
+            SELECT user_id FROM bookings
+            UNION ALL
+            SELECT user_id FROM user_tournaments
+        ) AS combined_data
+        GROUP BY user_id
+        ORDER BY total_count DESC
+        LIMIT 3;
+        """
+        cursor.execute(query)
+        top_users = cursor.fetchall()
+
+        # Step 2: Update the wallet balance for each of the top 10 users by adding 50
+
+        for users in top_users:
+            user_id=users[0]
+            cursor.execute("""
+            UPDATE wallet
+            SET balance = balance + 50
+            WHERE wallet_id = %s;
+            """, (user_id,))
+            cursor.execute("""
+            UPDATE wallet
+            SET balance = balance - 50
+            WHERE wallet_id = %s;
+            """, (admin_id,))
+
+        conn.commit()
+
+    2) MANAGE PROMOTIONS - SUPERADMIN
+
+    connection.autocommit = False
+
+        # Step 1: Get all users who have promotions with status 'Pending'
+        cursor.execute("""
+            SELECT DISTINCT creator_id
+            FROM promotions
+            WHERE status = 'Pending'
+        """)
+        users = cursor.fetchall()
+
+        # Loop over each user and deduct balance for each pending promotion
+        for user in users:
+            user_id = user[0]
+
+            # Get all pending promotions for this user
+            cursor.execute("""
+                SELECT ground_id
+                FROM promotions
+                WHERE creator_id = %s AND status = 'Pending'
+            """, (user_id,))
+            pending_promotions = cursor.fetchall()
+
+            cursor.execute("""
+                UPDATE promotions
+                SET status = 'Approved'
+                WHERE creator_id = %s AND status = 'Pending' ;
+            """, (user_id,))
+
+            # Step 3: For each pending promotion, deduct 100 from the user's wallet
+            for promotion in pending_promotions:
+                ground_id = promotion[0]
+
+                # Update the user's wallet balance (deduct 100 for each pending promotion)
+                cursor.execute("""
+                    UPDATE wallet
+                    SET balance = balance - 100
+                    WHERE user_id = %s
+                    RETURNING wallet_id
+                """, (user_id,))
+
+                # Fetch wallet_id after update
+                wallet_id = cursor.fetchone()[0]
+
+                # Step 4: Insert a record in the wallet_transactions table
+                cursor.execute("""
+                    INSERT INTO wallet_transactions (wallet_id, transaction_type, amount, description)
+                    VALUES (%s, 'debit', 100, 'Deducted for pending promotion')
+                """, (wallet_id,))
+
+                cursor.execute("""
+                    UPDATE wallet
+                    SET balance = balance + 100
+                    WHERE user_id = %s
+                """, (admin_id,))
+
+                # Step 5: Deduct the priority of the corresponding ground by 1
+                cursor.execute("""
+                    UPDATE grounds
+                    SET priority = priority - 1
+                    WHERE ground_id = %s
+                """, (ground_id,))
+
+        # Commit the transaction to save all changes
+        connection.commit() 
+
+    
+    3) ADD TOURNAMENTS - SUPERADMIN 
+
+        query = """
+            INSERT INTO tournaments (tournament_name, sport_type, location, start_date, end_date, created_at)
+            VALUES (%s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
+        """
+        cursor.execute(
+            query,
+            (tournament_name, sport_type, location, start_date, end_date)
+        )
+        conn.commit()
+
+    4) FIND LifeTimeValue (LTV) OF CUSTOMERS - SUPERADMIN 
+
+        SELECT 
+            u.user_id,
+            COALESCE(SUM(CASE WHEN wt.transaction_type = 'credit' THEN wt.amount ELSE 0 END), 0) AS total_credited,
+            COALESCE(SUM(CASE WHEN wt.transaction_type = 'debit' THEN wt.amount ELSE 0 END), 0) AS total_debited
+        FROM 
+            users u
+        LEFT JOIN 
+            wallet_transactions wt ON u.user_id = wt.wallet_id
+        WHERE 
+            u.user_type = 'booking_user'
+        GROUP BY 
+            u.user_id
+        ORDER BY 
+            total_credited DESC, total_debited DESC
+        LIMIT 10;
+
+    5) FETCH ALL GROUNDS FOR GROUND USER - GROUND OWNER
+        
+        query = """
+        SELECT ground_id, ground_name, location, sport_type
+        FROM grounds
+        WHERE creator_id = %s
+        """
+        cursor.execute(query, (user_id,))
+
+    6) PROMOTE A GROUND - GROUND OWNER
+
+        query = """
+        INSERT INTO promotions (ground_id, creator_id, status, details)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(query, (ground['ground_id'], user_id, 'Pending', f"Promotion for {ground['ground_name']}"))
+        conn.commit()
+
+    8) EDIT GROUND NAMES AND SAVE CHANGES - GROUND OWNER
+
+        update_query = """
+            UPDATE grounds
+            SET ground_name = %s, location = %s, sport_type = %s
+            WHERE ground_id = %s AND creator_id = %s
+        """
+        cursor.execute(update_query, (new_name, new_location, new_sport, ground['ground_id'], user_id))
+        conn.commit()
+
+    9)VIEW ALL BOOKINGS FOR A PARTICULAR GROUND - GROUND OWNER
+
+        booking_query = """
+        SELECT booking_id, user_id, booking_timestamp
+        FROM bookings
+        WHERE ground_id = %s
+        """
+        cursor.execute(booking_query, (ground['ground_id'],))
+
+    10)VIEW BOOKINGS FOR A PARTICULAR USER - BOOKING USER
+
+        cursor.execute("""
+        SELECT 
+            b.booking_id,
+            b.user_id AS booking_user_id,
+            b.ground_id,
+            b.booking_date,
+            b.time_slot,
+            r.receipt_id,
+            r.total_amount,
+            r.issued_at
+        FROM 
+            bookings b
+        JOIN 
+            receipts r ON b.booking_id = r.booking_id
+        WHERE 
+            b.user_id = %s;
+        """, (user_id,))
+
+
+        SUGGESTED CHANGE :
+
+    11) SUBMIT ISSUES - BOOKING USER
+
+        cursor.execute(
+            """
+            INSERT INTO user_issues (user_id, description)
+            VALUES (%s, %s)
+            """,
+            (user_id, issue_text.strip())
+        )
+        # Commit the transaction
+        connection.commit()
+
+    12) ADD MONEY - BOOKING USER
+
+        conn.autocommit = False
+
+        # Fetch the user's wallet ID and current balance
+        cursor.execute(
+            """
+            SELECT wallet_id, balance
+            FROM wallet
+            WHERE user_id = %s
+            FOR UPDATE;
+            """,
+            (user_id,)
+        )
+        wallet = cursor.fetchone()
+        if not wallet:
+            raise ValueError("Wallet not found for the given user_id.")
+
+        wallet_id, current_balance = wallet
+
+        # Update the user's balance
+        new_balance = current_balance + 100
+        cursor.execute(
+            """
+            UPDATE wallet
+            SET balance = %s
+            WHERE wallet_id = %s;
+            """,
+            (new_balance, wallet_id)
+        )
+
+        # Insert a record into wallet_transactions
+        cursor.execute(
+            """
+            INSERT INTO wallet_transactions (wallet_id, transaction_type, amount, description)
+            VALUES (%s, %s, %s, %s);
+            """,
+            (wallet_id, 'credit', 100, 'Added money to wallet.')
+        )
+        conn.commit()
+
+    13) JOIN TOURNAMENT - BOOKING USER
+
+        query = """
+            INSERT INTO user_tournaments (user_id, tournament_id, joined_at)
+            VALUES (%s, %s, CURRENT_TIMESTAMP)
+        """
+        cursor.execute(query, (user_id, tournament_id))
+        conn.commit()
+
+    14) SHOW ALL TOURNAMENTS FOR A LOCATION - BOOKING USER
+
+        query = """
+            SELECT tournament_id,tournament_name , location , sport_type, start_date, end_date 
+            FROM tournaments 
+            WHERE location = %s
+        """
+        cursor.execute(query, (location,))
+
+    15) GET GROUNDS BY NAME - BOOKING USER
+
+        query = """
+        SELECT ground_id, ground_name, location, sport_type
+        FROM grounds
+        WHERE ground_name=%s
+        LIMIT 5
+        """
+
+        # Execute the query with the provided ground_name
+        cursor.execute(query, (ground_name,))
+
+
+    16) BOOKING A GROUND - CALLS PROCEDURE - BOOKING USER
+
+        cursor.execute("""
+            SELECT * 
+            FROM check_and_book(
+                p_user_id := %s, 
+                p_ground_id := %s, 
+                p_booking_date := %s, 
+                p_time_slot := %s
+            );
+        """, (user_id, ground_id, selected_date, selected_time))
+        conn.commit()
+
+    17) GET RECEIPT - BOOKING USER
+
+        query = """
+        SELECT receipt_id, booking_id, user_id, ground_id, total_amount, issued_at
+        FROM receipts
+        WHERE booking_id = %s AND user_id = %s AND ground_id = %s;
+        """
+        
+        # Execute the query with provided parameters
+        cursor.execute(query, (booking_id, user_id, ground_id))
+
+    18) USER LOGIN - ALL
+
+        query = """
+            SELECT user_id, password  
+            FROM users 
+            WHERE email = %s AND user_type = %s;
+        """
+        
+        # Execute the query with the provided parameters
+        cursor.execute(query, (email, user_type))
+
+    19) FILTER - SEARCH GROUND - BOOKING USER
+
+        query = """
+            SELECT ground_id, ground_name, location, sport_type
+            FROM grounds
+            WHERE location = %s AND sport_type = %s
+            ORDER BY priority ASC;
+        """
+
+        # Execute the query with placeholders replaced by the actual values
+        cursor.execute(query, (location, sport))
